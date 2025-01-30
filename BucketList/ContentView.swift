@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var locations = [Location]()
+    @State private var selectedPlace: Location?
 
     let startPosition = MapCameraPosition.region(
         MKCoordinateRegion(
@@ -22,11 +23,20 @@ struct ContentView: View {
         MapReader { proxy in
             Map(initialPosition: startPosition) {
                 ForEach(locations) { location in
-                    Marker(
+                    Annotation(
                         location.name,
-                        coordinate: CLLocationCoordinate2D(
-                            latitude: location.latitude, longitude: location.longitude))
-
+                        coordinate: location.coordinate
+                    ) {
+                        Image(systemName: "star.fill")
+                            .resizable()
+                            .foregroundStyle(.yellow)
+                            .frame(width: 32, height: 32)
+                            .highPriorityGesture(
+                                TapGesture().onEnded { _ in
+                                    selectedPlace = location
+                                }
+                            )
+                    }
                 }
             }
             .onTapGesture { position in
@@ -35,6 +45,13 @@ struct ContentView: View {
                         id: UUID(), name: "New location", description: "",
                         latitude: coordinate.latitude, longitude: coordinate.longitude)
                     locations.append(newLocation)
+                }
+            }
+            .sheet(item: $selectedPlace) { place in
+                EditView(location: place) { newLocation in
+                    if let index = locations.firstIndex(of: place) {
+                        locations[index] = newLocation
+                    }
                 }
             }
         }
